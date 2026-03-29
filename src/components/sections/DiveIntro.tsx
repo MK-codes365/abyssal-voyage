@@ -136,11 +136,7 @@ export default function DiveIntro({ onComplete }: DiveIntroProps) {
 
   const handleVideoEnd = useCallback(() => {
     setIsEnding(true);
-
-    // Pause video naturally and WAIT for user to manually click DIVE IN
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
+    // Video loops automatically — no pause needed
   }, []);
 
   useEffect(() => {
@@ -192,6 +188,8 @@ export default function DiveIntro({ onComplete }: DiveIntroProps) {
       <video
         ref={videoRef}
         playsInline
+        muted
+        loop
         preload="auto"
         className="absolute inset-0 w-full h-full object-cover"
         style={{
