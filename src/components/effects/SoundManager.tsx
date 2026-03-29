@@ -72,9 +72,9 @@ export default function SoundManager() {
     hasInteracted.current = true;
 
     try {
-      // 1. Setup continuous background voice (/bg-voice.mp4)
-      const bgVoice = new Audio("/bg-voice.mp4");
-      bgVoice.volume = 0.15; // Low background volume — ducked under narration
+      // 1. Setup continuous background audio (/bg-audio.mp3)
+      const bgVoice = new Audio("/bg-audio.mp3");
+      bgVoice.volume = 0.25; // 25% volume as requested
       bgVoice.loop = true;
       bgVoice.play().catch(() => {});
       bgVoiceRef.current = bgVoice;
@@ -86,22 +86,22 @@ export default function SoundManager() {
           narAudio.volume = 1; // Full volume so narration is clearly hearable
           narAudio.loop = false;
 
-          // When narration starts playing, duck the background voice
+          // When narration starts playing, duck the background audio
           narAudio.addEventListener("play", () => {
             if (bgVoiceRef.current) {
-              gsap.to(bgVoiceRef.current, { volume: 0.05, duration: 0.5 });
+              gsap.to(bgVoiceRef.current, { volume: 0.08, duration: 0.5 });
             }
           });
 
-          // When narration finishes or pauses, restore background voice
+          // When narration finishes or pauses, restore background audio
           narAudio.addEventListener("ended", () => {
             if (bgVoiceRef.current) {
-              gsap.to(bgVoiceRef.current, { volume: 0.15, duration: 1 });
+              gsap.to(bgVoiceRef.current, { volume: 0.25, duration: 1 });
             }
           });
           narAudio.addEventListener("pause", () => {
             if (bgVoiceRef.current) {
-              gsap.to(bgVoiceRef.current, { volume: 0.15, duration: 1 });
+              gsap.to(bgVoiceRef.current, { volume: 0.25, duration: 1 });
             }
           });
 
