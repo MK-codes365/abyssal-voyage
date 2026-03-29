@@ -5,35 +5,28 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const ZONE_AUDIO_CONFIG = [
-  { id: "epipelagic", src: "/audio/waves.mp3", volume: 0.4, narrationSrc: "/audio/story-epi.mp3" },
-  { id: "mesopelagic", src: "/audio/bubbles.mp3", volume: 0.3, narrationSrc: "/audio/story-meso.mp3" },
-  { id: "bathypelagic", src: "/audio/whale.mp3", volume: 0.25, narrationSrc: "/audio/story-bathy.mp3" },
-  { id: "abyssopelagic", src: "/audio/deep-rumble.mp3", volume: 0.2, narrationSrc: "/audio/story-abysso.mp3" },
-  { id: "hadalpelagic", src: "/audio/hadal-ambience.mp3", volume: 0.15, narrationSrc: "/audio/story-hadal.mp3" },
+  { id: "epipelagic", narrationSrc: "/audio/story-epi.mp3" },
+  { id: "mesopelagic", narrationSrc: "/audio/story-meso.mp3" },
+  { id: "bathypelagic", narrationSrc: "/audio/story-bathy.mp3" },
+  { id: "abyssopelagic", narrationSrc: "/audio/story-abysso.mp3" },
+  { id: "hadalpelagic", narrationSrc: "/audio/story-hadal.mp3" },
 ];
 
 export default function SoundManager() {
   const [isMuted, setIsMuted] = useState(true);
   const [activeZone, setActiveZone] = useState(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioSourcesRef = useRef<Map<string, { audio: HTMLAudioElement; gain: GainNode }>>(new Map());
   const narrationSourcesRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const bgVoiceRef = useRef<HTMLAudioElement | null>(null);
   const hasInteracted = useRef(false);
+  const lastZoneRef = useRef(-1);
 
   // Global Auto-Unlock: The moment the user clicks anywhere (like the "Dive In" button),
-  // we initialize the audio engine and unmute it automatically to begin the cinematic journey.
-  // We execute .play() SYNCHRONOUSLY here to bypass strict browser autoplay blockers!
+  // we initialize audio and unmute automatically.
   useEffect(() => {
     const handleFirstInteraction = () => {
       if (!hasInteracted.current) {
         initAudio();
         setIsMuted(false);
-        
-        // Force sync play on the current zone's voiceover to guarantee browser approval
-        const currentStory = narrationSourcesRef.current.get(ZONE_AUDIO_CONFIG[activeZone].id);
-        if (currentStory) {
-           currentStory.play().catch(() => {});
-        }
       }
       document.removeEventListener("click", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);
@@ -46,8 +39,9 @@ export default function SoundManager() {
       document.removeEventListener("click", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);
     };
-  }, [activeZone]);
+  }, []);
 
+  // ScrollTrigger to track which zone user is in
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
@@ -66,11 +60,6 @@ export default function SoundManager() {
 
     return () => {
       trigger.kill();
-      // Cleanup audio
-      audioSourcesRef.current.forEach(({ audio }) => {
-        audio.pause();
-        audio.src = "";
-      });
       narrationSourcesRef.current.forEach((audio) => {
         audio.pause();
         audio.src = "";
@@ -83,92 +72,88 @@ export default function SoundManager() {
     hasInteracted.current = true;
 
     try {
-      const ctx = new AudioContext();
-      audioContextRef.current = ctx;
+      // 1. Setup continuous background voice (/bg-voice.mp4)
+      const bgVoice = new Audio("/bg-voice.mp4");
+      bgVoice.volume = 0.15; // Low background volume — ducked under narration
+      bgVoice.loop = true;
+      bgVoice.play().catch(() => {});
+      bgVoiceRef.current = bgVoice;
 
+      // 2. Setup per-zone storytelling narrations
       ZONE_AUDIO_CONFIG.forEach((config) => {
-        // 1. Setup Ambient Looping Sounds (Web Audio API)
-        const audio = new Audio(config.src);
-        audio.loop = true;
-        audio.crossOrigin = "anonymous";
-
-        try {
-          const source = ctx.createMediaElementSource(audio);
-          const gain = ctx.createGain();
-          gain.gain.value = 0;
-          source.connect(gain);
-          gain.connect(ctx.destination);
-          audio.play().catch(() => {});
-          audioSourcesRef.current.set(config.id, { audio, gain });
-        } catch {
-          // Audio file not found — graceful degradation
-        }
-
-        // 2. Setup AWS Polly Storytelling Voices (Raw HTML5 Audio)
         if (config.narrationSrc) {
           const narAudio = new Audio(config.narrationSrc);
-          narAudio.volume = 1;
-          narAudio.loop = false; // We don't want the narrator to repeat endlessly!
+          narAudio.volume = 1; // Full volume so narration is clearly hearable
+          narAudio.loop = false;
+
+          // When narration starts playing, duck the background voice
+          narAudio.addEventListener("play", () => {
+            if (bgVoiceRef.current) {
+              gsap.to(bgVoiceRef.current, { volume: 0.05, duration: 0.5 });
+            }
+          });
+
+          // When narration finishes or pauses, restore background voice
+          narAudio.addEventListener("ended", () => {
+            if (bgVoiceRef.current) {
+              gsap.to(bgVoiceRef.current, { volume: 0.15, duration: 1 });
+            }
+          });
+          narAudio.addEventListener("pause", () => {
+            if (bgVoiceRef.current) {
+              gsap.to(bgVoiceRef.current, { volume: 0.15, duration: 1 });
+            }
+          });
+
           narrationSourcesRef.current.set(config.id, narAudio);
         }
       });
     } catch {
-      // Web Audio API not supported
+      // Web Audio API not supported — graceful degradation
     }
   };
 
-  // Crossfade between zones and trigger AWS storytelling
+  // Handle zone changes — play/pause narration per zone
   useEffect(() => {
-    // 1. Handle Ambient Sound Crossfading
-    if (audioContextRef.current && !isMuted) {
-      ZONE_AUDIO_CONFIG.forEach((config, index) => {
-        const source = audioSourcesRef.current.get(config.id);
-        if (!source) return;
+    if (!hasInteracted.current) return;
 
-        const targetVolume = index === activeZone ? config.volume : 0;
-        source.gain.gain.linearRampToValueAtTime(
-          targetVolume,
-          audioContextRef.current!.currentTime + 1.5
-        );
-      });
-    }
+    // Only trigger when zone actually changes
+    if (lastZoneRef.current === activeZone) return;
+    lastZoneRef.current = activeZone;
 
-    // 2. Handle Storytelling Playback State
     ZONE_AUDIO_CONFIG.forEach((config, index) => {
       const narAudio = narrationSourcesRef.current.get(config.id);
       if (!narAudio) return;
 
       if (index === activeZone) {
-        // If we enter this zone (or unmute), tell the story!
+        // Entering this zone — play its narration
         if (!isMuted) {
+          narAudio.currentTime = 0; // Restart from beginning for this zone
           narAudio.play().catch(() => {});
-        } else {
-          // Pause precisely where we left off if mutated mid-sentence
-          narAudio.pause();
         }
       } else {
-        // Not the active zone anymore. Silence the narrator and rewind the story chapter.
+        // Not the active zone — stop its narration
         narAudio.pause();
         narAudio.currentTime = 0;
       }
     });
   }, [activeZone, isMuted]);
 
+  // Handle mute/unmute for background voice
+  useEffect(() => {
+    if (!bgVoiceRef.current) return;
+    if (isMuted) {
+      bgVoiceRef.current.pause();
+    } else {
+      bgVoiceRef.current.play().catch(() => {});
+    }
+  }, [isMuted]);
+
   const toggleMute = () => {
     if (!hasInteracted.current) {
       initAudio();
     }
-    setIsMuted((prev) => {
-      const newMuted = !prev;
-      if (audioContextRef.current) {
-        if (newMuted) {
-          audioContextRef.current.suspend();
-        } else {
-          audioContextRef.current.resume();
-        }
-      }
-      return newMuted;
-    });
+    setIsMuted((prev) => !prev);
   };
 
   return (
