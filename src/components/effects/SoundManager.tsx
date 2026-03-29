@@ -20,6 +20,27 @@ export default function SoundManager() {
   const narrationSourcesRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const hasInteracted = useRef(false);
 
+  // Global Auto-Unlock: The moment the user clicks anywhere (like the "Dive In" button),
+  // we initialize the audio engine and unmute it automatically to begin the cinematic journey.
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (!hasInteracted.current) {
+        initAudio();
+        setIsMuted(false);
+      }
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+    };
+
+    document.addEventListener("click", handleFirstInteraction);
+    document.addEventListener("keydown", handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+    };
+  }, []);
+
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
