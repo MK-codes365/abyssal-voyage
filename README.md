@@ -71,6 +71,27 @@ Real-time depth meter and zone indicators
 </table>
 
 ---
+## 🏆 What Makes This Unique
+
+This isn't a typical scrolling website. Here's what sets **Abyssal Voyage** apart:
+
+### 🔮 3D Mouse-Tracked Parallax
+Move your cursor and the entire UI physically tilts in 3D space. Text layers tilt **towards** your mouse while background video tilts **away**, creating a holographic depth illusion using pure CSS `rotateX/Y` transforms driven by GSAP.
+
+### 🧬 Sci-Fi Data Decoders
+Fact cards don't just appear — they **scramble through randomized symbols** (`A#8 - 9D%`) for one second before locking into their real data values. Built with `IntersectionObserver` and triggered the instant cards enter the viewport.
+
+### 🔊 Zero-Latency Synthesized Audio
+Interactive elements produce a **submarine sonar ping** on hover — generated entirely by the browser's native `Web Audio API OscillatorNode`. No external audio files needed. A 350Hz → 80Hz frequency sweep creates a tactile, physical interaction feel.
+
+### 🔦 Interactive Flashlight Masking
+In the deep ocean zones (Midnight, Abyssal, Hadal), the screen goes pitch black. Users must **guide a radial CSS flashlight mask** bound to their cursor to uncover hidden content — simulating an actual deep-sea submersible experience.
+
+### 🎙️ Cinematic Auto-Ducking Audio
+Background audio automatically **ducks to 8% volume** whenever a zone narration starts playing, then **fades back to 25%** when it finishes — mirroring the audio engineering techniques used in Netflix and HBO documentaries.
+
+### 🌊 Physics-Based Scroll Distortion
+Scroll velocity is tracked in real-time and mapped to CSS `skewY` and `blur` filters, simulating **hydrodynamic drag** as if the content itself is being pushed through water. Faster scrolling = more visual distortion.
 
 ## 🚀 Quick Start
 
@@ -140,27 +161,7 @@ Explore the depths through distinct zones:
 
 ---
 
-## 🏆 What Makes This Unique
 
-This isn't a typical scrolling website. Here's what sets **Abyssal Voyage** apart:
-
-### 🔮 3D Mouse-Tracked Parallax
-Move your cursor and the entire UI physically tilts in 3D space. Text layers tilt **towards** your mouse while background video tilts **away**, creating a holographic depth illusion using pure CSS `rotateX/Y` transforms driven by GSAP.
-
-### 🧬 Sci-Fi Data Decoders
-Fact cards don't just appear — they **scramble through randomized symbols** (`A#8 - 9D%`) for one second before locking into their real data values. Built with `IntersectionObserver` and triggered the instant cards enter the viewport.
-
-### 🔊 Zero-Latency Synthesized Audio
-Interactive elements produce a **submarine sonar ping** on hover — generated entirely by the browser's native `Web Audio API OscillatorNode`. No external audio files needed. A 350Hz → 80Hz frequency sweep creates a tactile, physical interaction feel.
-
-### 🔦 Interactive Flashlight Masking
-In the deep ocean zones (Midnight, Abyssal, Hadal), the screen goes pitch black. Users must **guide a radial CSS flashlight mask** bound to their cursor to uncover hidden content — simulating an actual deep-sea submersible experience.
-
-### 🎙️ Cinematic Auto-Ducking Audio
-Background audio automatically **ducks to 8% volume** whenever a zone narration starts playing, then **fades back to 25%** when it finishes — mirroring the audio engineering techniques used in Netflix and HBO documentaries.
-
-### 🌊 Physics-Based Scroll Distortion
-Scroll velocity is tracked in real-time and mapped to CSS `skewY` and `blur` filters, simulating **hydrodynamic drag** as if the content itself is being pushed through water. Faster scrolling = more visual distortion.
 
 ## 📦 Key Dependencies
 
