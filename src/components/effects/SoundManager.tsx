@@ -22,11 +22,18 @@ export default function SoundManager() {
 
   // Global Auto-Unlock: The moment the user clicks anywhere (like the "Dive In" button),
   // we initialize the audio engine and unmute it automatically to begin the cinematic journey.
+  // We execute .play() SYNCHRONOUSLY here to bypass strict browser autoplay blockers!
   useEffect(() => {
     const handleFirstInteraction = () => {
       if (!hasInteracted.current) {
         initAudio();
         setIsMuted(false);
+        
+        // Force sync play on the current zone's voiceover to guarantee browser approval
+        const currentStory = narrationSourcesRef.current.get(ZONE_AUDIO_CONFIG[activeZone].id);
+        if (currentStory) {
+           currentStory.play().catch(() => {});
+        }
       }
       document.removeEventListener("click", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);
@@ -39,7 +46,7 @@ export default function SoundManager() {
       document.removeEventListener("click", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);
     };
-  }, []);
+  }, [activeZone]);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
